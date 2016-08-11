@@ -29,11 +29,11 @@ class NPMWebJar @Inject() (git: Git, binTray: BinTray, pusher: Pusher, maven: Ma
     }
 
     val webJarFuture = for {
-      artifactId <- git.artifactId(nameOrUrlish)
+      artifactId <- maven.artifactId(nameOrUrlish)
       _ <- push("update", s"Determined Artifact Name: $artifactId")
       packageInfo <- npm.info(nameOrUrlish, Some(version))
       _ <- push("update", "Got NPM info")
-      mavenDependencies <- maven.convertNpmBowerDependenciesToMaven(packageInfo.dependencies)
+      mavenDependencies <- npm.convertDependenciesToMaven(packageInfo.dependencies)
       _ <- push("update", "Converted dependencies to Maven")
       pom = templates.xml.pom(groupId, artifactId, packageInfo, mavenDependencies).toString()
       _ <- push("update", "Generated POM")

@@ -11,9 +11,9 @@ import play.api.libs.json._
 import play.api.libs.ws.WSClient
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Success, Try}
 
-class NPM @Inject() (ws: WSClient, git: Git, licenseDetector: LicenseDetector) (implicit ec: ExecutionContext) {
+class NPM @Inject() (ws: WSClient, git: Git, licenseDetector: LicenseDetector, maven: Maven) (implicit ec: ExecutionContext) {
 
   val BASE_URL = "http://registry.npmjs.org"
 
@@ -43,6 +43,12 @@ class NPM @Inject() (ws: WSClient, git: Git, licenseDetector: LicenseDetector) (
     }
     else {
       s"$BASE_URL/$maybeScopeAndPackageName/-/$maybeScopeAndPackageName-$version.tgz"
+    }
+  }
+
+  def convertDependenciesToMaven(dependencies: Map[String, String]): Future[Map[String, String]] = {
+    maven.convertNpmBowerDependenciesToMaven(dependencies) { case (providedName, version, gitUrl) =>
+      info(providedName, Some(version)).filter(_.sourceConnectionUrl == gitUrl).map(_ => providedName)
     }
   }
 

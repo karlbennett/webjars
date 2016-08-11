@@ -178,4 +178,63 @@ class BowerSpec extends PlaySpecification with GlobalApplication {
     }
   }
 
+  "converting npm deps to maven" should {
+    "work with github short references" in {
+      val deps = Map(
+        "iron-a11y-announcer" -> "PolymerElements/iron-a11y-announcer"
+      )
+      val mavenDeps = await(bower.convertDependenciesToMaven(deps))
+      mavenDeps.get("iron-a11y-announcer") must beSome ("[0,)")
+    }
+    "work with semver deps" in {
+      val deps = Map(
+        "iron-a11y-announcer" -> "PolymerElements/iron-a11y-announcer#^1.0.0"
+      )
+      val mavenDeps = await(bower.convertDependenciesToMaven(deps))
+      mavenDeps.get("iron-a11y-announcer") must beSome ("[1.0.0,2)")
+    }
+    "work with tag deps" in {
+      val deps = Map(
+        "iron-a11y-announcer" -> "PolymerElements/iron-a11y-announcer#v1.0.0"
+      )
+      val mavenDeps = await(bower.convertDependenciesToMaven(deps))
+      mavenDeps.get("iron-a11y-announcer") must beSome ("1.0.0")
+    }
+    "work with branch deps" in {
+      val deps = Map(
+        "iron-a11y-announcer" -> "PolymerElements/iron-a11y-announcer#add-polylint"
+      )
+      val mavenDeps = await(bower.convertDependenciesToMaven(deps))
+      mavenDeps.get("iron-a11y-announcer") must beSome ("[0,)")
+    }
+    "work with sha deps" in {
+      val deps = Map(
+        "iron-a11y-announcer" -> "PolymerElements/iron-a11y-announcer#2432d39a1693ccd728cbe7eb55810063737d3403"
+      )
+      val mavenDeps = await(bower.convertDependenciesToMaven(deps))
+      mavenDeps.get("iron-a11y-announcer") must beSome ("2432d39a1693ccd728cbe7eb55810063737d3403")
+    }
+    "avoid invalid names without version" in {
+      val deps = Map(
+        "iron-a11y-announcer" -> "https://github.com/PolymerElements/iron-a11y-keys.git"
+      )
+      val mavenDeps = await(bower.convertDependenciesToMaven(deps))
+      mavenDeps.get("github-com-PolymerElements-iron-a11y-keys") must beSome ("[0,)")
+    }
+    "avoid invalid names with sem version" in {
+      val deps = Map(
+        "iron-a11y-announcer" -> "https://github.com/PolymerElements/iron-a11y-keys.git#^1.0.6"
+      )
+      val mavenDeps = await(bower.convertDependenciesToMaven(deps))
+      mavenDeps.get("github-com-PolymerElements-iron-a11y-keys") must beSome ("[1.0.6,2)")
+    }
+    "avoid invalid names with tag version" in {
+      val deps = Map(
+        "iron-a11y-announcer" -> "https://github.com/PolymerElements/iron-a11y-keys.git#v1.0.6"
+      )
+      val mavenDeps = await(bower.convertDependenciesToMaven(deps))
+      mavenDeps.get("github-com-PolymerElements-iron-a11y-keys") must beSome ("1.0.6")
+    }
+  }
+
 }

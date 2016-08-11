@@ -11,11 +11,19 @@ import play.api.libs.json._
 import play.api.libs.ws._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Success, Try}
 
-class Bower @Inject() (ws: WSClient, git: Git, licenseDetector: LicenseDetector) (implicit ec: ExecutionContext) {
+class Bower @Inject() (ws: WSClient, git: Git, licenseDetector: LicenseDetector, maven: Maven) (implicit ec: ExecutionContext) {
 
   val BASE_URL = "https://bower-as-a-service.herokuapp.com"
+
+  def convertDependenciesToMaven(dependencies: Map[String, String]): Future[Map[String, String]] = {
+    maven.convertNpmBowerDependenciesToMaven(dependencies) { case (providedName, _, gitUrl) =>
+      rawInfo(providedName, "latest").filter { packageInfo =>
+        packageInfo.gitHubUri.map(_.toString) == Success(gitUrl)
+      } map (_ => providedName)
+    }
+  }
 
   def versions(packageNameOrGitRepo: String): Future[Seq[String]] = {
     if (git.isGit(packageNameOrGitRepo)) {

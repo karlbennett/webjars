@@ -75,40 +75,22 @@ class GitSpec extends PlaySpecification with GlobalApplication {
 
       bufferedInputStream.available() must beEqualTo (645120)
 
-      val files = Stream.continually(archiveStream.getNextEntry).takeWhile(_ != null).map(_.getName).toSeq
+      val files = Stream.continually(archiveStream.getNextEntry).takeWhile(_ != null).map(_.getName)
       files.size must beEqualTo (178)
       files.exists(_.contains("node_modules")) must beFalse
       files.exists(_.contains(".git")) must beFalse
     }
   }
 
-  "artifactId" should {
-    "convert a name to a name" in {
-      await(git.artifactId("foo")) must beEqualTo ("foo")
-    }
-    "convert a github url to a name" in {
-      await(git.artifactId("mochajs/mocha")) must beEqualTo ("github-com-mochajs-mocha")
-    }
-    "convert a git:// url to a name" in {
-      await(git.artifactId("git://github.com/mochajs/mocha.git")) must beEqualTo ("github-com-mochajs-mocha")
-    }
-    "convert a https:// url to a name" in {
-      await(git.artifactId("https://github.com/mochajs/mocha.git")) must beEqualTo ("github-com-mochajs-mocha")
-    }
-    "convert a scoped name" in {
-      await(git.artifactId("@reactivex/rxjs")) must beEqualTo ("reactivex__rxjs")
-    }
-    "not go case insensitive for github repos" in {
-      await(git.artifactId("MochaJS/Mocha")) must beEqualTo ("github-com-MochaJS-Mocha")
-    }
-    "not go case insensitive for non-github repos" in {
-      await(git.artifactId("Foo")) must beEqualTo ("Foo")
-    }
-  }
-
   "versionsOnBranch" should {
     "get the commits on a branch" in {
       await(git.versionsOnBranch("git://github.com/mochajs/mocha.git", "master")) must contain("8a100df959")
+    }
+  }
+
+  "branches" should {
+    "get the branches" in {
+      await(git.branches("git://github.com/mochajs/mocha.git")) must contain("client")
     }
   }
 

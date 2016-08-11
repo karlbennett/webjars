@@ -7,6 +7,7 @@ import java.nio.file.Files
 import javax.inject.Inject
 
 import org.eclipse.jgit.api.{Git => GitApi}
+import org.eclipse.jgit.lib.Repository
 import org.springframework.util.FileSystemUtils
 import play.api.http.{HeaderNames, Status}
 import play.api.libs.ws.WSClient
@@ -72,28 +73,6 @@ class Git @Inject() (ws: WSClient) (implicit ec: ExecutionContext) {
     }
   }
 
-  // converts git urls to unique artifactId's
-  def artifactId(nameOrUrlish: String): Future[String] = {
-    if (isGit(nameOrUrlish)) {
-      gitUrl(nameOrUrlish).flatMap { gitUrl =>
-        Future.fromTry {
-          Try {
-            val uri = new URI(gitUrl.stripSuffix(".git"))
-
-            val host = uri.getHost.replaceAll("[^\\w\\d]", "-")
-            val path = uri.getPath.replaceAll("[^\\w\\d]", "-")
-
-            host + path
-          }
-        }
-      }
-    }
-    else {
-      val encoded = nameOrUrlish.replaceAllLiterally("@", "").replaceAllLiterally("/", "__")
-      Future.successful(encoded)
-    }
-  }
-
   def versions(gitRepo: String): Future[Seq[String]] = {
     gitUrl(gitRepo).flatMap { url =>
       Future.fromTry {
@@ -118,6 +97,23 @@ class Git @Inject() (ws: WSClient) (implicit ec: ExecutionContext) {
             commits.asScala.map(_.getId.abbreviate(10).name()).toSeq
           }
         }
+      }
+    }
+  }
+
+  def branches(gitRepo: String): Future[Seq[String]] = {
+    gitUrl(gitRepo).flatMap { url =>
+      Future {
+        GitApi.lsRemoteRepository()
+          .setHeads(true)
+          .setTags(false)
+          .setRemote(url)
+          .call()
+          .asScala
+          .toSeq
+          .map { ref =>
+            ref.getName.stripPrefix("refs/heads/")
+          }
       }
     }
   }
